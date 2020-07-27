@@ -2,6 +2,7 @@ import tensorflow as tf
 import cv2
 from src.MTCNN import MTCNN
 import os
+import numpy as np
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
@@ -22,23 +23,34 @@ mtcnn = MTCNN(threshold=[0.5, 0.6, 0.7], # 置信度阈值
               )
 
 # 读取图片
-image = cv2.imread("./test.png")
+file_path = 'test3.jpg'
+image = cv2.imread(file_path)
 
 # 传入网络
-rects, landmark, ret = mtcnn.detect_face(image)
+rects, landmarks, ret = mtcnn.detect_face(image)
+print('rects: ', str(rects))
+print('landmarks: ', str(landmarks))
 
 if ret == False:
     # 未检测到人脸
     print("该图片未检测到人脸")
 
 else:
+    img_ = image.copy()
+    # 人脸框
     for rect in rects:
-
-        img_ = cv2.rectangle(image.copy(), 
+        img_ = cv2.rectangle(img_,
                             (int(rect[0]), int(rect[1])),
                             (int(rect[2]), int(rect[3])),
                             (0, 255, 0), 4)
-        cv2.imshow("img_", img_)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-
+    # 人脸关键位置点
+    for landmark in landmarks:
+        for mark in landmark:
+            mark = tuple(mark)
+            # img_ = cv2.drawMarker(img_, mark, (0, 0, 255))
+            img_ = cv2.circle(img_, (int(mark[0]), int(mark[1])), 2,
+                              (0, 0, 255), cv2.FILLED)
+    cv2.imshow("img_", img_)
+    cv2.imwrite(os.path.splitext(file_path)[0] + '_prediction.jpg', img_)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()

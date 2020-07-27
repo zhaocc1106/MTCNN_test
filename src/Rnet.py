@@ -35,9 +35,8 @@ class Rnet(Net):
 
             offset: 经过网络后得到的偏移量. For example:
 
-                [[[[ 0.0463337   0.01343044 -0.125744   -0.03012199]]
-
-                  [[-0.04171417 -0.19884819  0.18158348  0.25635445]]]]
+                [[0.0463337   0.01343044 -0.125744   -0.03012199]
+                 [[-0.04171417 -0.19884819  0.18158348  0.25635445]]
 
             x: 符合阈值条件的坐标值 For example:
 
@@ -52,31 +51,50 @@ class Rnet(Net):
         """
 
         # 人脸概率
+        # classifier shape为(bz, 2)，bz代表pnet检测到人脸的个数，2分别代表有无人脸的概率
         classifier = outs[0]
+        # print('classifier: ', str(classifier))
 
         # 偏移量
+        # offset shape为(bz, 4)，bz代表pnet检测到人脸的个数，4代表矩形框的偏移值
         offset = outs[1]
+        # print('offset: ', str(offset))
 
         x = np.where(classifier[:, 1] > self.__threshold)
 
         # 获得相应位置的offset值
-        offset = offset[x, None]
+        offset = offset[x]
 
-        dx1 = np.array(offset[0])[:, :, 0]
-        dy1 = np.array(offset[0])[:, :, 1]
-        dx2 = np.array(offset[0])[:, :, 2]
-        dy2 = np.array(offset[0])[:, :, 3]
+        # 获取x,y的偏移值
+        # dx1 = np.array(offset[0])[:, :, 0]
+        # dy1 = np.array(offset[0])[:, :, 1]
+        # dx2 = np.array(offset[0])[:, :, 2]
+        # dy2 = np.array(offset[0])[:, :, 3]
+        dx1 = np.array(offset)[:, 0:1]
+        dy1 = np.array(offset)[:, 1:2]
+        dx2 = np.array(offset)[:, 2:3]
+        dy2 = np.array(offset)[:, 3:4]
 
         pnet_got_rects = np.array(pnet_got_rects)
 
-        x1 = np.array(pnet_got_rects[x][:, 0])[np.newaxis, :].T
-        y1 = np.array(pnet_got_rects[x][:, 1])[np.newaxis, :].T
-        x2 = np.array(pnet_got_rects[x][:, 2])[np.newaxis, :].T
-        y2 = np.array(pnet_got_rects[x][:, 3])[np.newaxis, :].T
+        # x1 = np.array(pnet_got_rects[x][:, 0])[np.newaxis, :].T
+        # y1 = np.array(pnet_got_rects[x][:, 1])[np.newaxis, :].T
+        # x2 = np.array(pnet_got_rects[x][:, 2])[np.newaxis, :].T
+        # y2 = np.array(pnet_got_rects[x][:, 3])[np.newaxis, :].T
+        # 获取pnet输出的矩形框两个坐标值
+        x1 = np.array(pnet_got_rects[x])[:, 0:1]
+        y1 = np.array(pnet_got_rects[x])[:, 1:2]
+        x2 = np.array(pnet_got_rects[x])[:, 2:3]
+        y2 = np.array(pnet_got_rects[x])[:, 3:4]
 
+        # 计算pnet输出矩形框的宽和高
         w = x2 - x1
         h = y2 - y1
 
+        # print('x1: ', str(x1))
+        # print('w: ', str(w))
+        # print('dx1: ', str(dx1))
+        # 根据pnet输出的矩形框和rnet计算出的偏移量计算rnet的矩形框
         new_x1 = np.fix(x1 + dx1*w)
         new_x2 = np.fix(x2 + dx2*w)
         new_y1 = np.fix(y1 + dy1*h)
@@ -84,7 +102,7 @@ class Rnet(Net):
 
         score = np.array(classifier[x, 1]).T
 
-
+        # rnet输出shape(bz, 5)，bz代表rnet预测的人脸的个数，5代表两个坐标值和1个得分值
         boundingbox = np.concatenate((new_x1, 
                                       new_y1, 
                                       new_x2, 

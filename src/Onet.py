@@ -42,13 +42,17 @@ class Onet(Net):
         offset_x5 = onet_pts[x, 4]
         offset_y5 = onet_pts[x, 9]
 
-        x1 = rnet_got_rects[0][0]
-        y1 = rnet_got_rects[0][1]
-        x2 = rnet_got_rects[0][2]
-        y2 = rnet_got_rects[0][3]
+        # print('rnet_got_rects: ', str(rnet_got_rects))
+        x1 = np.asarray(rnet_got_rects)[:, 0]
+        y1 = np.asarray(rnet_got_rects)[:, 1]
+        x2 = np.asarray(rnet_got_rects)[:, 2]
+        y2 = np.asarray(rnet_got_rects)[:, 3]
 
         w = x2 - x1
         h = y2 - y1
+        # print('w: ', str(w))
+        # print('x1: ', str(x1))
+        # print('offset_x1: ', str(offset_x1))
 
         onet_pts_x1 = np.array(offset_x1*w + x1)
         onet_pts_x2 = np.array(offset_x2*w + x1)
@@ -61,21 +65,37 @@ class Onet(Net):
         onet_pts_y4 = np.array(offset_y4*h + y1)
         onet_pts_y5 = np.array(offset_y5*h + y1)
 
-        onet_left_eye = np.concatenate((onet_pts_x1, 
-                                        onet_pts_y1), axis=1)
-        onet_right_eye = np.concatenate((onet_pts_x2, 
-                                         onet_pts_y2), axis=1)
-        onet_nose = np.concatenate((onet_pts_x3, 
-                                    onet_pts_y3), axis=1)
-        onet_left_mouth = np.concatenate((onet_pts_x4, 
-                                          onet_pts_y4), axis=1)
-        onet_right_mouth = np.concatenate((onet_pts_x5, 
-                                           onet_pts_y5), axis=1)
+        # print('onet_pts_x1: ', str(onet_pts_x1))
+        # print('onet_pts_y1: ', str(onet_pts_y1))
+        # print('np.concatenate((onet_pts_x1, onet_pts_y1), axis=1): ',
+        #       str(np.concatenate((onet_pts_x1, onet_pts_y1), axis=1)))
+        onet_left_eye = np.reshape(
+            np.concatenate((onet_pts_x1, onet_pts_y1), axis=1),
+            (-1, 2))
+        # print('onet_left_eye: ', str(onet_left_eye))
+        onet_right_eye = np.reshape(
+            np.concatenate((onet_pts_x2, onet_pts_y2), axis=1),
+            (-1, 2))
+        onet_nose = np.reshape(
+            np.concatenate((onet_pts_x3, onet_pts_y3), axis=1),
+            (-1, 2))
+        onet_left_mouth = np.reshape(
+            np.concatenate((onet_pts_x4, onet_pts_y4), axis=1),
+            (-1, 2))
+        onet_right_mouth = np.reshape(
+            np.concatenate((onet_pts_x5, onet_pts_y5), axis=1),
+            (-1, 2))
+        if onet_left_eye.shape[0] > 1:
+            onet_left_eye = onet_left_eye.T
+            onet_right_eye = onet_right_eye.T
+            onet_nose = onet_nose.T
+            onet_left_mouth = onet_left_mouth.T
+            onet_right_mouth = onet_right_mouth.T
 
-        return (onet_left_eye, 
-                onet_right_eye, 
-                onet_nose, 
-                onet_left_mouth, 
+        return (onet_left_eye,
+                onet_right_eye,
+                onet_nose,
+                onet_left_mouth,
                 onet_right_mouth)
 
     def __get_boundingbox(self, outs, rnet_got_rects):
@@ -162,7 +182,7 @@ class Onet(Net):
 
         """
 
-        self.print_messages("开始通过Rnet网络进行处理")
+        self.print_messages("开始通过Onet网络进行处理")
 
         outs = self.__model.predict(onet_need_imgs)
 

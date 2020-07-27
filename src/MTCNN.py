@@ -233,7 +233,7 @@ class MTCNN:
             return [], [], False
         
         # onet网络处理
-        rects, landmark, ret = self.onet_processing(rects, 
+        rects, landmarks, ret = self.onet_processing(rects,
                                                image.copy())
         
         if ret == False:
@@ -241,14 +241,17 @@ class MTCNN:
         
         # 边界框最后调整
         self.fix_rects(rects)
-        
+
+        # landmarks最后调整
+        self.fix_landmarks(landmarks)
+
         # 如果保存图片
-        self.to_save_face(rects, image.copy(), self.save_dirt) 
+        self.to_save_face(rects, image.copy(), self.save_dirt)
         
         # 如果需要获取安全帽
-        self.to_get_hat(rects, image.copy())
+        # self.to_get_hat(rects, image.copy())
 
-        return rects, landmark, ret
+        return rects, landmarks, ret
         
     ######################################
     # 将得到的边界还原到原图合适的比例
@@ -264,7 +267,16 @@ class MTCNN:
             rect[1] = rect[1] * self.height_scale
             rect[2] = rect[0] + width * self.width_scale
             rect[3] = rect[1] + height * self.height_scale
-    
+
+    ######################################
+    # 将得到的landmarks还原到原图合适的比例
+    ######################################
+    def fix_landmarks(self, landmarks):
+        for landmark in landmarks:
+            for mark in landmark:
+                mark[0] = mark[0] * self.width_scale
+                mark[1] = mark[1] * self.height_scale
+
             
     ######################################
     # 根据需要截取图片，保存到本地
@@ -300,8 +312,9 @@ class MTCNN:
 
                 img_ = self.to_get_all_faces(rect, image)
                 #show_img(img_)
-                if(cv2.imwrite(dirt+"/"+name+".jpg", img_)):
-                    self.print_messages("成功保存人脸到{}".format(dirt+"/"+name+".jpg"))
+                if(cv2.imwrite(dirt+"/"+name+"_" +str(i)+".jpg", img_)):
+                    self.print_messages("成功保存人脸到{}"
+                                        .format(dirt+"/"+name+"_" +str(i)+".jpg"))
     
     
     def to_get_all_faces(self, rect, image):
